@@ -33,4 +33,10 @@ export class InventoriesController {
     // Este método se utiliza para el listado inicial de inventarios (paginado)
     return await this.inventoriesService.findAll(warehouseFilterPaginatedDto);
   }
+
+  @MessagePattern('findProductsByWarehouseId')
+  async findProductsByWarehouseId(@Payload() warehouseId: string) {
+    // Este método se utiliza para obtener los productos de un almacén específico
+    return await this.inventoriesService.findProductsByWarehouseId(warehouseId);
+  }
 }

@@ -35,7 +35,7 @@ export class InventoriesService {
       this.natsClient.send('findProductsByIds', [createInventoryDto.productId])
     );
 
-    if( productExists.length === 0  ){
+    if (productExists.length === 0) {
       throw new RpcException({
         statusCode: HttpStatus.BAD_REQUEST,
         message: 'No se encontro el producto',
@@ -119,6 +119,7 @@ export class InventoriesService {
       id: inv.id,
       quantity: inv.quantity,
       warehouseId: inv.warehouseId,
+      isActive: inv.isActive,
       product: productsData.find((p: any) => p.id === inv.productId),
       createdAt: inv.createdAt,
       updatedAt: inv.updatedAt,
@@ -134,5 +135,26 @@ export class InventoriesService {
         total: totalInventories,
       },
     };
+  }
+
+  async findProductsByWarehouseId(warehouseId: string) {
+    const inventories = await this.prisma.inventory.findMany({
+      where: {
+        warehouseId,
+        isActive: true,
+      },
+    });
+
+    const productIds = inventories.map(inv => inv.productId);
+    const productsData = await firstValueFrom(
+      this.natsClient.send('findProductsByIds', productIds)
+    );
+
+    const inventoriesWithProducts = inventories.map(inv => ({
+      ...productsData.find((p: any) => p.id === inv.productId),
+      quantity: inv.quantity,
+    }));
+
+    return inventoriesWithProducts;
   }
 }
