@@ -157,4 +157,69 @@ export class InventoriesService {
 
     return inventoriesWithProducts;
   }
+
+  async adjustStock(productId: string, warehouseId: string, quantityOrdered: number) {
+
+    console.log(productId, warehouseId, quantityOrdered);
+
+    // Validaciones básicas
+    if (quantityOrdered == null) {
+      throw new RpcException({
+        message: 'Quantity es obligatorio para ajuste de inventario',
+        status: 400
+      });
+    }
+    // Intentar encontrar registro existente
+    try {
+      const existing = await this.prisma.inventory.findUnique({
+        where: {
+          productId_warehouseId: {
+            productId,
+            warehouseId,
+          },
+        },
+      });
+      if (existing) {
+        // Actualizar sumando quantity
+        const newQuantity = existing.quantity + quantityOrdered;
+        // Opcional: validar que newQuantity no sea negativo
+        if (newQuantity < 0) {
+          throw new RpcException({
+            message: `No se puede ajustar inventario a valor negativo (current: ${existing.quantity}, adjust: ${quantityOrdered})`,
+            status: 400
+          });
+        }
+        const updated = await this.prisma.inventory.update({
+          where: {
+            productId_warehouseId: { productId, warehouseId },
+          },
+          data: {
+            quantity: newQuantity,
+          },
+        });
+        return updated;
+      } else {
+        // Crear nuevo registro
+        if (quantityOrdered < 0) {
+          throw new RpcException({
+            message: `No existe inventario previo para restar; quantity debe ser >= 0 para crear: recibido ${quantityOrdered}`,
+            status: 400
+          });
+        }
+        const created = await this.prisma.inventory.create({
+          data: {
+            productId,
+            warehouseId,
+            quantity: quantityOrdered,
+          },
+        });
+        return created;
+      }
+    } catch (error) {
+      throw new RpcException({
+        message: `Error accediendo a inventario: ${error.message}`,
+        status: 500
+      });
+    }
+  }
 }

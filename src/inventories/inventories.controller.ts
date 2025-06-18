@@ -17,7 +17,7 @@ export class InventoriesController {
   }
 
   @MessagePattern('updateInventory')
-  async update(@Payload() payload: {id: string; updateInventoryDto: UpdateInventoryDto}) {
+  async update(@Payload() payload: { id: string; updateInventoryDto: UpdateInventoryDto }) {
     // Se actualiza el inventario y se emite el evento "inventory.updated"
     return await this.inventoriesService.update(payload.id, payload.updateInventoryDto);
   }
@@ -38,5 +38,13 @@ export class InventoriesController {
   async findProductsByWarehouseId(@Payload() warehouseId: string) {
     // Este método se utiliza para obtener los productos de un almacén específico
     return await this.inventoriesService.findProductsByWarehouseId(warehouseId);
+  }
+
+  @MessagePattern('adjustInventory') // nombre del canal/patrón que usarás desde importaciones
+  async handleAdjustInventory(@Payload() data: AdjustInventoryDto) {
+    const { productId, warehouseId, quantityOrdered } = data;
+    const result = await this.inventoriesService.adjustStock(productId, warehouseId, quantityOrdered);
+    return { success: true, inventory: result };
+
   }
 }
