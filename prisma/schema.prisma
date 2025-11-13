@@ -5,23 +5,24 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client-js"
+    provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
 }
 
 model Inventory {
-  id          String @id @default(uuid())
-  productId   String // Reference to the product (from the Products microservice)
-  warehouseId String // Reference to the warehouse (from the Warehouses microservice)
-  quantity    Float
+    id          String @id @default(uuid())
+    productId   String // Reference to the product (from the Products microservice)
+    warehouseId String // Reference to the warehouse (from the Warehouses microservice)
+    quantity    Float
 
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+    isActive  Boolean  @default(true)
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 
-  @@unique([productId, warehouseId])
+    @@unique([productId, warehouseId])
+    @@map("inventories")
 }
