@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
     provider = "prisma-client-js"
 }
@@ -14,10 +8,12 @@ datasource db {
 }
 
 model Inventory {
-    id          String @id @default(uuid())
+    id String @id @default(uuid())
+
     productId   String // Reference to the product (from the Products microservice)
     warehouseId String // Reference to the warehouse (from the Warehouses microservice)
-    quantity    Float
+
+    quantity Float
 
     isActive  Boolean  @default(true)
     createdAt DateTime @default(now())
@@ -25,4 +21,74 @@ model Inventory {
 
     @@unique([productId, warehouseId])
     @@map("inventories")
+}
+
+
+// ==========================================
+// MOVIMIENTOS DE INVENTARIO
+// ==========================================
+
+enum MovementType {
+    // ENTRADAS
+    PURCHASE        // Compra a proveedor
+    RETURN_IN       // Devolución de cliente
+    ADJUSTMENT_IN   // Ajuste por inventario físico (sobrante)
+    TRANSFER_IN     // Transferencia desde otro almacén
+    PRODUCTION_IN   // Producción (si manufactura)
+    
+    // SALIDAS
+    SALE            // Venta
+    RETURN_OUT      // Devolución a proveedor
+    ADJUSTMENT_OUT  // Ajuste por inventario físico (faltante)
+    TRANSFER_OUT    // Transferencia a otro almacén
+    DAMAGED         // Producto dañado/pérdida
+    SAMPLE          // Muestra gratis
+}
+
+model InventoryMovement {
+    id           String @id @default(uuid())
+    movementCode String @unique // MOV-2024-001
+
+    // Producto y almacén
+    productId   String
+    warehouseId String
+
+    // Tipo y estado
+    type   MovementType
+
+    // Cantidades
+    quantity      Float // Cantidad del movimiento
+    previousStock Float // Stock antes del movimiento
+    newStock      Float // Stock después del movimiento
+
+    // Costos (importante para valorización)
+    unitCost  Float? // Costo unitario
+    totalCost Float? // Costo total del movimiento
+
+    // Referencias a otros módulos
+    referenceType String? // 'quotation', 'purchase', 'sale', etc.
+    referenceId   String? // ID del documento relacionado
+
+    // Transferencias (si aplica)
+    sourceWarehouseId      String? // Almacén origen (para transferencias)
+    destinationWarehouseId String? // Almacén destino (para transferencias)
+
+    // Información adicional
+    reason String? @db.Text // Motivo del movimiento
+    notes  String? @db.Text
+
+    // Responsable
+    userId String // Usuario que registró el movimiento
+
+    // Fechas
+    movementDate DateTime @default(now())
+    createdAt    DateTime @default(now())
+    updatedAt    DateTime @updatedAt
+
+    @@index([productId])
+    @@index([warehouseId])
+    @@index([type])
+    @@index([movementDate])
+    @@index([referenceType, referenceId])
+    @@map("inventory_movements")
 }
